@@ -12,7 +12,7 @@ sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
 # Connect the socket to the port where the server is listening
 try:
-    server_address = ('localhost', 5027)
+    server_address = ('localhost', 5040)
     print('Conectando a {} puerto {}...'.format(*server_address))
     sock.connect(server_address)
     # Recibimos la información del server y la decodificamos en utf-8
@@ -30,23 +30,24 @@ try:
         print('Iniciando transferencia')
 
         # Leer archivo
-        with open(textfile, encoding = 'utf-8') as f:
-            for line in f:
-                init_config = {
-                    'message': 'Bienvenido al servidor'
-                }
+        with open(textfile) as f:
 
-                # Transformando dict a JSON
-                data = json.dumps(init_config)
-                # Enviando datos
+            for line in f:
+                data = {
+                    'message': line,
+                    'trans_status': True
+                }
+                data = json.dumps(data)
                 sock.sendall(data.encode('utf-8'))
 
-                
+                print('-----------------------------------------------------------------------------') 
+                print(line)
+
                 data = sock.recv(1024).decode('utf-8')
-                data = json.loads(data) 
+                data = json.loads(data)
 
                 print(f'Capacidad del buffer {data["buffer_status"]} de {init_config["window"]}')
-                bf_status = int(data["buffer_status"])
+                bf_status = data["buffer_status"]
 
                 if bf_status == int(init_config['window']) :
                     message = 'Cliente en espera, buffer en capacidad máxima'
@@ -61,10 +62,46 @@ try:
                     data = sock.recv(1024).decode('utf-8')
                     data = json.loads(data) 
                     print(f'ACK{data["ack"]}')
+        print('-----------------------------------------------------------------------------') 
+        print('\n') 
+        print('\n') 
+        print('Archivo enviado al 100%')
 
+        data = {
+            'trans_status': False
+        }
 
-except:
+        # Transformando dict a JSON
+        data = json.dumps(data)
+        # Enviando datos
+        sock.sendall(data.encode('utf-8'))
+        
+        data = sock.recv(1024).decode('utf-8')
+        data = json.loads(data) 
+        print(data['message'])
+
+        print('\n') 
+        print('\n')
+        while bf_status > 0:
+            print('-----------------------------------------------------------------------------') 
+            data = {
+                'message': 'Usando datos en memoria'
+            }
+            data = json.dumps(data)
+            sock.sendall(data.encode('utf-8'))
+
+            data = sock.recv(1024).decode('utf-8')
+            data = json.loads(data) 
+            print(f'ACK{data["ack"]}')
+            print(f'Capacidad del buffer {data["buffer_status"]} de {init_config["window"]}')
+
+            bf_status = data["buffer_status"]
+        
+        break
+
+except Exception as e:
     print('Error en conexión')
+    print(e)
 
 finally:
     # Cerramos la conexión

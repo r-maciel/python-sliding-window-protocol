@@ -10,7 +10,7 @@ import json
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
 # Definimos los datos de nuestro server
-server_address = ('localhost', 5027)
+server_address = ('localhost', 5040)
 print('Inicializando en {} puerto {}'.format(*server_address))
 sock.bind(server_address)
 
@@ -38,7 +38,7 @@ while True:
 
         # Init buffer
         buffer = []
-        buffer_status = len(buffer)
+        buffer_status = 0
         ack = 0
 
         transfering = True
@@ -48,7 +48,7 @@ while True:
                 # Recibimos y decodificamos los datos que el cliente envía
                 data = connection.recv(1024).decode('utf-8')
                 data = json.loads(data)
-                if data['message']:
+                if not data['trans_status']:
                     transfering = False
                     break
 
@@ -63,7 +63,7 @@ while True:
                 connection.sendall(data.encode('utf-8'))
 
             if transfering :
-
+                print('-----------------------------------------------------------------------------') 
                 print(buffer)
 
                 # Mensaje del status del cliente
@@ -81,7 +81,33 @@ while True:
                 }
                 data = json.dumps(data)
                 connection.sendall(data.encode('utf-8'))
+        data = {
+            'message': 'Transferencia finalizada, usando datos en buffer'
+        }
+        data = json.dumps(data)
+        connection.sendall(data.encode('utf-8'))
 
+        print('\n') 
+        print('\n')
+
+        while buffer_status > 0:
+            print('-----------------------------------------------------------------------------') 
+            data = connection.recv(1024).decode('utf-8')
+            data = json.loads(data)
+            print(data['message'])
+            print(buffer)
+            print(buffer.pop(0))
+            ack += 1
+            buffer_status -= 1
+            data = {
+                'buffer_status': buffer_status,
+                'ack': ack
+            }
+            data = json.dumps(data)
+            connection.sendall(data.encode('utf-8'))
+
+        print('\n') 
+        print('\n')
     finally:
         # Cerramos la conexión con el cliente
         connection.close()
